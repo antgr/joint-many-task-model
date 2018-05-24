@@ -35,7 +35,7 @@ def activate(outputs, weight_shape, bias_shape, activation=tf.nn.softmax):
 
 
 def rmse_loss(outputs, targets):
-    return tf.sqrt(tf.reduce_mean(tf.square(tf.sub(targets, outputs))))
+    return tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(targets, outputs))))
 
 
 def pad(x, max_length, pad_constant=-1):

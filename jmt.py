@@ -2,7 +2,8 @@ import tensorflow as tf
 import numpy as np
 from my_lstm import MyLSTM
 from helper import *
-linear = tf.nn.rnn_cell._linear
+from tensorflow.python.ops import rnn_cell_impl
+linear = rnn_cell_impl._linear
 LSTMStateTuple = tf.nn.rnn_cell.LSTMStateTuple
 
 
@@ -34,14 +35,14 @@ class JMT:
     def build_model(self):
         ''' Builds the whole computational graph '''
         def sentence_op(inputs, t_pos, t_chunk):
-            with tf.variable_scope('pos'):
+            with tf.variable_scope('pos',reuse=tf.AUTO_REUSE):
                 embeddings = tf.constant(self.vec, dtype=tf.float32)
                 embeds = tf.nn.embedding_lookup(embeddings, inputs)
                 fw_lstm = MyLSTM(self.dim, state_is_tuple=True)
                 bw_lstm = MyLSTM(self.dim, state_is_tuple=True)
                 outputs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=fw_lstm, cell_bw=bw_lstm, inputs=embeds,
                                                              sequence_length=length(embeds), dtype=tf.float32)
-                concat_outputs = tf.concat(2, outputs)
+                concat_outputs = tf.concat(outputs,2)
                 y_pos = activate(concat_outputs, [
                     self.dim * 2, len(self.i2p)], [len(self.i2p)])
                 t_pos_sparse = tf.one_hot(
@@ -52,13 +53,13 @@ class JMT:
                 optimize_op = tf.train.AdagradOptimizer(
                     self.lr).minimize(loss)
 
-            with tf.variable_scope('chunk'):
-                inputs1 = tf.concat(2, [embeds, concat_outputs, y_pos])
+            with tf.variable_scope('chunk',reuse=tf.AUTO_REUSE):
+                inputs1 = tf.concat([embeds, concat_outputs, y_pos],2)
                 fw_lstm = MyLSTM(self.dim, state_is_tuple=True)
                 bw_lstm = MyLSTM(self.dim, state_is_tuple=True)
                 outputs1, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=fw_lstm, cell_bw=bw_lstm, inputs=inputs1,
                                                               sequence_length=length(embeds), dtype=tf.float32)
-                concat_outputs1 = tf.concat(2, outputs1)
+                concat_outputs1 = tf.concat(outputs1,2)
                 y_chunk = activate(concat_outputs1, [
                                    self.dim * 2, len(self.i2c)], [len(self.i2c)])
                 t_chunk_sparse = tf.one_hot(
@@ -72,30 +73,30 @@ class JMT:
             with tf.variable_scope('relatedness'):
                 with tf.variable_scope('layer_1'):
                     inputs2 = tf.concat(
-                        2, [embeds, concat_outputs1, y_pos, y_chunk])
+                         [embeds, concat_outputs1, y_pos, y_chunk],2)
                     fw_lstm = MyLSTM(self.dim, state_is_tuple=True)
                     bw_lstm = MyLSTM(self.dim, state_is_tuple=True)
                     outputs2, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=fw_lstm, cell_bw=bw_lstm, inputs=inputs2,
                                                                   sequence_length=length(embeds), dtype=tf.float32)
-                    concat_outputs2 = tf.concat(2, outputs2)
+                    concat_outputs2 = tf.concat(outputs2,2)
                 with tf.variable_scope('layer_2'):
                     inputs3 = tf.concat(
-                        2, [embeds, concat_outputs2, y_pos, y_chunk])
+                        [embeds, concat_outputs2, y_pos, y_chunk],2)
                     fw_lstm1 = MyLSTM(self.dim, state_is_tuple=True)
                     bw_lstm1 = MyLSTM(self.dim, state_is_tuple=True)
                     outputs3, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=fw_lstm1, cell_bw=bw_lstm1, inputs=inputs3,
                                                                   sequence_length=length(embeds), dtype=tf.float32)
-                    concat_outputs3 = tf.concat(2, outputs3)
+                    concat_outputs3 = tf.concat(outputs3,2)
                     s = tf.reduce_max(concat_outputs3, reduction_indices=1)
 
                 with tf.variable_scope('layer_3'):
                     inputs4 = tf.concat(
-                        2, [embeds, concat_outputs3, y_pos, y_chunk])
+                        [embeds, concat_outputs3, y_pos, y_chunk],2)
                     fw_lstm2 = MyLSTM(self.dim, state_is_tuple=True)
                     bw_lstm2 = MyLSTM(self.dim, state_is_tuple=True)
                     outputs4, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=fw_lstm2, cell_bw=bw_lstm2, inputs=inputs4,
                                                                   sequence_length=length(embeds), dtype=tf.float32)
-                    concat_outputs4 = tf.concat(2, outputs3)
+                    concat_outputs4 = tf.concat(outputs3,2)
                     s1 = tf.reduce_max(concat_outputs4, reduction_indices=1)
 
             return s, s1, optimize_op, optimize_op1, loss, loss1, y_pos, y_chunk
@@ -114,8 +115,8 @@ class JMT:
                 shape=[None, self.max_length], dtype=tf.int32, name='input1')
             s21, s22 = sentence_op(self.inp1, self.t_p, self.t_c)[:2]
 
-            d = tf.concat(1, [tf.abs(tf.sub(s11, s21)), tf.mul(s11, s21)])
-            d1 = tf.concat(1, [tf.sub(s12, s22), tf.mul(s12, s22)])
+            d = tf.concat([tf.abs(tf.subtract(s11, s21)), tf.multiply(s11, s21)],1)
+            d1 = tf.concat([tf.subtract(s12, s22), tf.multiply(s12, s22)],1)
         with tf.variable_scope('relation'):
             self.y_rel = tf.squeeze(
                 activate(d, [self.dim * 4, 1], [1], activation=tf.nn.relu))

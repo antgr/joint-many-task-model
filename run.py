@@ -16,7 +16,7 @@ with tf.Graph().as_default() as graph:
         'chunk': 500,
         'relatedness': 200
     }
-    model.train_model(graph, train_desc, True)
+    model.train_model(graph, train_desc, False)
 
     task_desc = {
         'pos': 'this has increased the risk',
