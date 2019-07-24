@@ -3,7 +3,8 @@ import numpy as np
 from my_lstm import MyLSTM
 from helper import *
 from tensorflow.python.ops import rnn_cell_impl
-linear = rnn_cell_impl._linear
+#linear = rnn_cell_impl._linear
+linear = tf.contrib.layers.fully_connected
 LSTMStateTuple = tf.nn.rnn_cell.LSTMStateTuple
 
 

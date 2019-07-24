@@ -1,7 +1,8 @@
 import tensorflow as tf
 from tensorflow.python.ops import variable_scope as vs
 from tensorflow.python.ops import rnn_cell_impl
-linear = rnn_cell_impl._linear
+#linear = rnn_cell_impl._linear
+linear = tf.contrib.layers.fully_connected
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops.math_ops import sigmoid, tanh
 LSTMStateTuple = tf.nn.rnn_cell.LSTMStateTuple
