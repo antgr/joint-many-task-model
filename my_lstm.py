@@ -21,7 +21,7 @@ class MyLSTM(tf.nn.rnn_cell.BasicLSTMCell):
                 c, h = array_ops.split(
                     value=state, num_or_size_splits=2, axis=1)
             g = tf.concat([inputs, h],1)
-            concat = linear([g], 4 * self._num_units, True)
+            concat = linear([g], 4 * self._num_units)
 
             # i = input_gate, j = new_input, f = forget_gate, o = output_gate
             i, j, f, o = array_ops.split(
